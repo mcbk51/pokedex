@@ -7,70 +7,56 @@ import (
 	"strings"
 )
 
+func startRepl() {
+	reader := bufio.NewScanner(os.Stdin)
+	for {
+		fmt.Print("Pokedex > ")
+		reader.Scan()
+
+		words := cleanInput(reader.Text())
+		if len(words) == 0 {
+			continue
+		}
+
+		commandName := words[0]
+
+		command, exists := getCommands()[commandName]
+		if exists {
+			err := command.callback()
+			if err != nil {
+				fmt.Println(err)
+			}
+			continue
+		} else {
+			fmt.Println("Unknown command")
+			continue
+		}
+	}
+}
+
+func cleanInput(text string) []string {
+	output := strings.ToLower(text)
+	words := strings.Fields(output)
+	return words
+}
+
 type cliCommand struct {
 	name        string
 	description string
 	callback    func() error
 }
 
-var commands map[string]cliCommand
-
-func init() {
-	commands = map[string]cliCommand{
-		"exit": {
-			name:        "exit",
-			description: "Exit the Pokedex",
-			callback:    commandExit,
-		},
+func getCommands() map[string]cliCommand {
+	return map[string]cliCommand{
 		"help": {
 			name:        "help",
 			description: "Displays a help message",
 			callback:    commandHelp,
 		},
+		"exit": {
+			name:        "exit",
+			description: "Exit the Pokedex",
+			callback:    commandExit,
+		},
 	}
-}
-
-func startRepl() {
-	scanner := bufio.NewScanner(os.Stdin)
-	for {
-		fmt.Print("Pokedex > ")
-		scanner.Scan()
-		words := cleanInput(scanner.Text())
-		if len(words) == 0 {
-			continue
-		}
-		firstWord := words[0]
-
-		if command, exists := commands[firstWord]; exists {
-			err := command.callback()
-			if err != nil {
-				fmt.Printf("Error: %v\n", err)
-			}
-		} else {
-			fmt.Printf("Unknown command: %s\n", firstWord)
-		}
-	}
-}
-
-func commandExit() error {
-	fmt.Println("Closing the Pokedex... Goodbye!")
-	os.Exit(0)
-	return nil
-}
-
-func commandHelp() error {
-	fmt.Println("Welcome to the Pokedex!")
-	fmt.Println("Usage:")
-	fmt.Println()
-	for _, cmd := range commands {
-		fmt.Printf("%s: %s\n", cmd.name, cmd.description)
-	}
-	fmt.Println()
-	return nil
-}
-
-func cleanInput(text string) []string {
-	lowText := strings.ToLower(text)
-	words := strings.Fields(lowText)
-	return words
 }
